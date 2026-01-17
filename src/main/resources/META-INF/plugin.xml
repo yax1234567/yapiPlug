@@ -1,0 +1,17 @@
+<idea-plugin>
+    <id>org.yax.yapiplug</id>
+    <name>Spring Controller Analyzer</name>
+    <vendor>YourName</vendor>
+
+    <depends>com.intellij.modules.platform</depends>
+    <depends>com.intellij.modules.java</depends>
+
+    <actions>
+        <action id="AnalyzeControllerAction"
+                class="org.yax.yapiplug.action.AnalyzeAction"
+                text="分析接口并上传到yapi"
+                description="发送方法详情到大模型分析">
+            <add-to-group group-id="EditorPopupMenu" anchor="first"/>
+        </action>
+    </actions>
+</idea-plugin>
