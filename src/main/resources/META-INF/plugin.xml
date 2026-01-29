@@ -14,4 +14,11 @@
             <add-to-group group-id="EditorPopupMenu" anchor="first"/>
         </action>
     </actions>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <projectConfigurable parentId="tools"
+                            instance="org.yax.yapiplug.config.PluginConfigurable"
+                            id="org.yax.yapiplug.config.PluginConfigurable"
+                            displayName="Yapi Plugin"/>
+    </extensions>
 </idea-plugin>

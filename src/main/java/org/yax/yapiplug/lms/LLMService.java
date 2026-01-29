@@ -9,6 +9,7 @@ import com.intellij.openapi.progress.Task;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.Messages;
 import org.jetbrains.annotations.NotNull;
+import org.yax.yapiplug.config.PluginConfig;
 
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
@@ -16,47 +17,55 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.Scanner;
 public class LLMService {
-    // 1. 替换为 DeepSeek 的 API Key
-    private static final String API_KEY = "sk-04f29052677b4397a73148b3e45e554f";
-    // 2. 替换为 DeepSeek 的标准 API 地址
-    private static final String API_URL = "https://api.deepseek.com/chat/completions";
 
     public static void sendToAI(Project project, String context) {
         System.out.println(context);
-        ProgressManager.getInstance().run(new Task.Backgroundable(project, "DeepSeek 正在深入分析中...", false) {
+        PluginConfig config = PluginConfig.getInstance(project);
+        String providerName = config.getProviderEnum().getDisplayName();
+
+        ProgressManager.getInstance().run(new Task.Backgroundable(project, providerName + " 正在深入分析中...", false) {
             @Override
             public void run(@NotNull ProgressIndicator indicator) {
                 try {
-                    String response = callDeepSeekAPI(context);
+                    String response = callLLMAPI(context, project);
 
                     ApplicationManager.getApplication().invokeLater(() -> {
-                        // 使用可滚动的对话框，因为 DeepSeek 返回内容可能很长
-                        Messages.showInfoMessage(project, response, "DeepSeek 代码分析报告");
+                        Messages.showInfoMessage(project, response, providerName + " 代码分析报告");
                     });
                 } catch (Exception e) {
                     ApplicationManager.getApplication().invokeLater(() -> {
-                        Messages.showErrorDialog(project, "DeepSeek 调用失败: " + e.getMessage(), "网络请求错误");
+                        Messages.showErrorDialog(project, providerName + " 调用失败: " + e.getMessage(), "网络请求错误");
                     });
                 }
             }
         });
     }
 
-    private static String callDeepSeekAPI(String promptContent) throws Exception {
-        URL url = new URL(API_URL);
+    private static String callLLMAPI(String promptContent, Project project) throws Exception {
+        PluginConfig config = PluginConfig.getInstance(project);
+        PluginConfig.Provider provider = config.getProviderEnum();
+        String apiKey = config.getApiKey();
+        String apiUrl = config.getApiUrl();
+        String model = config.getModel();
+
+        if (apiKey == null || apiKey.trim().isEmpty()) {
+            throw new RuntimeException("API Key 未配置，请在 Settings > Tools > Yapi Plugin 中配置");
+        }
+
+        URL url = new URL(apiUrl);
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
         conn.setRequestMethod("POST");
         conn.setRequestProperty("Content-Type", "application/json");
-        conn.setRequestProperty("Authorization", "Bearer " + API_KEY);
+        conn.setRequestProperty("Authorization", "Bearer " + apiKey);
         conn.setDoOutput(true);
 
         // 构建请求体
         JsonObject root = new JsonObject();
 
-        root.addProperty("model", "deepseek-chat");
+        root.addProperty("model", model != null && !model.trim().isEmpty() ? model : provider.getDefaultModel());
 
         JsonArray messages = new JsonArray();
-        
+
         JsonObject systemMsg = new JsonObject();
         systemMsg.addProperty("role", "system");
         systemMsg.addProperty("content", "你是一个 Spring Boot 专家。请分析 Controller 代码，" +
