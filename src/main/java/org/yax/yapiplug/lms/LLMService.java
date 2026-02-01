@@ -22,8 +22,9 @@ public class LLMService {
         System.out.println(context);
         PluginConfig config = PluginConfig.getInstance(project);
         String providerName = config.getProviderEnum().getDisplayName();
+        String modelName=config.getModel();
 
-        ProgressManager.getInstance().run(new Task.Backgroundable(project, providerName + " 正在深入分析中...", false) {
+        ProgressManager.getInstance().run(new Task.Backgroundable(project, providerName+"_"+modelName + " 正在深入分析中...", false) {
             @Override
             public void run(@NotNull ProgressIndicator indicator) {
                 try {

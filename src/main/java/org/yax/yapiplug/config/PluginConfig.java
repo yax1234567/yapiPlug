@@ -22,7 +22,7 @@ public final class PluginConfig implements PersistentStateComponent<PluginConfig
         NVIDIA("英伟达 (NVIDIA)", "https://integrate.api.nvidia.com/v1/chat/completions", "nvidia/llama-3.1-nemotron-70b-instruct",
                 new String[]{"nvidia/llama-3.1-nemotron-70b-instruct", "meta/llama-3.1-405b-instruct", "meta/llama-3.1-70b-instruct", 
                            "meta/llama-3.1-8b-instruct", "mistralai/mixtral-8x7b-instruct-v0.1", "microsoft/phi-3-medium-128k-instruct",
-                           "kimi", "glm-4", "glm-4-plus", "glm-4-0520", "glm-4-long", "glm-4-airx", "glm-4-flash"});
+                           "moonshotai/kimi-k2.5","moonshotai/kimi-k2-thinking", "z-ai/glm4.7", "deepseek-ai/deepseek-v3.2"});
 
         private final String displayName;
         private final String defaultApiUrl;

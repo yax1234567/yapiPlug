@@ -120,7 +120,26 @@ public class AnalyzeAction extends AnAction {
                     
                     // 递归解析非基本类型的字段
                     PsiType fieldType = field.getType();
-                    if (fieldType instanceof PsiClassType && !isBasicType(fieldType)) {
+                    
+                    // 处理集合类型（List、Set、Collection 等）
+                    if (isCollectionType(fieldType)) {
+                        PsiType[] typeArgs = ((PsiClassType) fieldType).getParameters();
+                        if (typeArgs.length > 0) {
+                            PsiType elementType = typeArgs[0];
+                            if (elementType instanceof PsiClassType && !isBasicType(elementType)) {
+                                PsiClass elementClass = ((PsiClassType) elementType).resolve();
+                                if (elementClass != null) {
+                                    String elementQualifiedName = elementClass.getQualifiedName();
+                                    if (elementQualifiedName != null && !elementQualifiedName.startsWith("java.") 
+                                            && !visitedClasses.contains(elementQualifiedName)) {
+                                        sb.append(indent).append("  [集合元素类型详细结构]\n");
+                                        appendClassFieldsWithDepth(elementType, sb, indent + "    ", visitedClasses);
+                                    }
+                                }
+                            }
+                        }
+                    } else if (fieldType instanceof PsiClassType && !isBasicType(fieldType)) {
+                        // 处理普通对象类型
                         PsiClass fieldClass = ((PsiClassType) fieldType).resolve();
                         if (fieldClass != null) {
                             String fieldQualifiedName = fieldClass.getQualifiedName();
@@ -157,6 +176,28 @@ public class AnalyzeAction extends AnAction {
                 }
             }
         }
+    }
+
+    private boolean isCollectionType(PsiType type) {
+        if (!(type instanceof PsiClassType)) {
+            return false;
+        }
+        
+        PsiClass psiClass = ((PsiClassType) type).resolve();
+        if (psiClass == null) {
+            return false;
+        }
+        
+        String qualifiedName = psiClass.getQualifiedName();
+        if (qualifiedName == null) {
+            return false;
+        }
+        
+        // 检查是否是集合类型
+        return qualifiedName.startsWith("java.util.") && 
+               (qualifiedName.contains("List") || qualifiedName.contains("Set") || 
+                qualifiedName.contains("Collection") || qualifiedName.contains("Queue") ||
+                qualifiedName.contains("Deque"));
     }
 
     private boolean isBasicType(PsiType type) {
