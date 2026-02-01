@@ -16,7 +16,7 @@ public class PluginConfigurable implements Configurable {
     private JComboBox<String> providerComboBox;
     private JBTextField apiKeyField;
     private JBTextField apiUrlField;
-    private JBTextField modelField;
+    private JComboBox<String> modelComboBox;
     private JPanel mainPanel;
 
     public PluginConfigurable(Project project) {
@@ -42,7 +42,7 @@ public class PluginConfigurable implements Configurable {
         providerComboBox = new JComboBox<>(providers);
         apiKeyField = new JBTextField();
         apiUrlField = new JBTextField();
-        modelField = new JBTextField();
+        modelComboBox = new JComboBox<>();
 
         com.intellij.openapi.ui.LabeledComponent<JComboBox<String>> providerPanel = new com.intellij.openapi.ui.LabeledComponent<>();
         providerPanel.setText("模型提供商:");
@@ -56,9 +56,9 @@ public class PluginConfigurable implements Configurable {
         apiUrlPanel.setText("API URL:");
         apiUrlPanel.setComponent(apiUrlField);
 
-        com.intellij.openapi.ui.LabeledComponent<JBTextField> modelPanel = new com.intellij.openapi.ui.LabeledComponent<>();
+        com.intellij.openapi.ui.LabeledComponent<JComboBox<String>> modelPanel = new com.intellij.openapi.ui.LabeledComponent<>();
         modelPanel.setText("Model:");
-        modelPanel.setComponent(modelField);
+        modelPanel.setComponent(modelComboBox);
 
         mainPanel.add(providerPanel);
         mainPanel.add(apiKeyPanel);
@@ -70,7 +70,13 @@ public class PluginConfigurable implements Configurable {
                 int selectedIndex = providerComboBox.getSelectedIndex();
                 PluginConfig.Provider provider = PluginConfig.Provider.values()[selectedIndex];
                 apiUrlField.setText(provider.getDefaultApiUrl());
-                modelField.setText(provider.getDefaultModel());
+                
+                // 更新模型下拉列表
+                modelComboBox.removeAllItems();
+                for (String model : provider.getAvailableModels()) {
+                    modelComboBox.addItem(model);
+                }
+                modelComboBox.setSelectedItem(provider.getDefaultModel());
             }
         });
 
@@ -82,10 +88,11 @@ public class PluginConfigurable implements Configurable {
         PluginConfig config = PluginConfig.getInstance(project);
         int selectedIndex = providerComboBox.getSelectedIndex();
         PluginConfig.Provider selectedProvider = PluginConfig.Provider.values()[selectedIndex];
+        String selectedModel = (String) modelComboBox.getSelectedItem();
         return !selectedProvider.name().equals(config.getProvider()) ||
                !apiKeyField.getText().equals(config.getApiKey()) ||
                !apiUrlField.getText().equals(config.getApiUrl()) ||
-               !modelField.getText().equals(config.getModel());
+               (selectedModel != null && !selectedModel.equals(config.getModel()));
     }
 
     @Override
@@ -93,25 +100,37 @@ public class PluginConfigurable implements Configurable {
         PluginConfig config = PluginConfig.getInstance(project);
         int selectedIndex = providerComboBox.getSelectedIndex();
         PluginConfig.Provider selectedProvider = PluginConfig.Provider.values()[selectedIndex];
+        String selectedModel = (String) modelComboBox.getSelectedItem();
         config.setProvider(selectedProvider.name());
         config.setApiKey(apiKeyField.getText());
         config.setApiUrl(apiUrlField.getText());
-        config.setModel(modelField.getText());
+        if (selectedModel != null) {
+            config.setModel(selectedModel);
+        }
     }
 
     @Override
     public void reset() {
         PluginConfig config = PluginConfig.getInstance(project);
         PluginConfig.Provider provider = config.getProviderEnum();
+        
+        // 设置提供商选择
         for (int i = 0; i < PluginConfig.Provider.values().length; i++) {
             if (PluginConfig.Provider.values()[i] == provider) {
                 providerComboBox.setSelectedIndex(i);
                 break;
             }
         }
+        
+        // 更新模型下拉列表
+        modelComboBox.removeAllItems();
+        for (String model : provider.getAvailableModels()) {
+            modelComboBox.addItem(model);
+        }
+        
         apiKeyField.setText(config.getApiKey());
         apiUrlField.setText(config.getApiUrl());
-        modelField.setText(config.getModel());
+        modelComboBox.setSelectedItem(config.getModel());
     }
 
     @Nullable

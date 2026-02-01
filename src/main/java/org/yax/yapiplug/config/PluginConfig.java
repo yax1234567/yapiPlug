@@ -13,18 +13,27 @@ import org.jetbrains.annotations.Nullable;
 public final class PluginConfig implements PersistentStateComponent<PluginConfig.State> {
 
     public enum Provider {
-        DEEPSEEK("DeepSeek", "https://api.deepseek.com/chat/completions", "deepseek-chat"),
-        GLM("GLM (智谱AI)", "https://open.bigmodel.cn/api/paas/v4/chat/completions", "glm-4"),
-        QWEN("千问 (通义千问)", "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions", "qwen-plus");
+        DEEPSEEK("DeepSeek", "https://api.deepseek.com/chat/completions", "deepseek-chat", 
+                new String[]{"deepseek-chat", "deepseek-coder"}),
+        GLM("GLM (智谱AI)", "https://open.bigmodel.cn/api/paas/v4/chat/completions", "glm-4",
+                new String[]{"glm-4", "glm-4-plus", "glm-4-0520", "glm-4-long", "glm-4-airx", "glm-4-flash"}),
+        QWEN("千问 (通义千问)", "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions", "qwen-plus",
+                new String[]{"qwen-plus", "qwen-turbo", "qwen-max", "qwen-max-longcontext"}),
+        NVIDIA("英伟达 (NVIDIA)", "https://integrate.api.nvidia.com/v1/chat/completions", "nvidia/llama-3.1-nemotron-70b-instruct",
+                new String[]{"nvidia/llama-3.1-nemotron-70b-instruct", "meta/llama-3.1-405b-instruct", "meta/llama-3.1-70b-instruct", 
+                           "meta/llama-3.1-8b-instruct", "mistralai/mixtral-8x7b-instruct-v0.1", "microsoft/phi-3-medium-128k-instruct",
+                           "kimi", "glm-4", "glm-4-plus", "glm-4-0520", "glm-4-long", "glm-4-airx", "glm-4-flash"});
 
         private final String displayName;
         private final String defaultApiUrl;
         private final String defaultModel;
+        private final String[] availableModels;
 
-        Provider(String displayName, String defaultApiUrl, String defaultModel) {
+        Provider(String displayName, String defaultApiUrl, String defaultModel, String[] availableModels) {
             this.displayName = displayName;
             this.defaultApiUrl = defaultApiUrl;
             this.defaultModel = defaultModel;
+            this.availableModels = availableModels;
         }
 
         public String getDisplayName() {
@@ -37,6 +46,10 @@ public final class PluginConfig implements PersistentStateComponent<PluginConfig
 
         public String getDefaultModel() {
             return defaultModel;
+        }
+
+        public String[] getAvailableModels() {
+            return availableModels;
         }
     }
 
