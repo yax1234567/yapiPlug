@@ -89,20 +89,86 @@ public class AnalyzeAction extends AnAction {
     }
 
     private void appendClassFields(PsiType type, StringBuilder sb) {
+        appendClassFieldsWithDepth(type, sb, "    ", new HashSet<>());
+    }
+
+    private void appendClassFieldsWithDepth(PsiType type, StringBuilder sb, String indent, Set<String> visitedClasses) {
         if (type instanceof PsiClassType) {
-            PsiClass psiClass = ((PsiClassType) type).resolve();
+            PsiClassType classType = (PsiClassType) type;
+            PsiClass psiClass = classType.resolve();
+            
             // 过滤掉 Java 核心类，只分析自定义 DTO/Entity
-            if (psiClass != null && !psiClass.getQualifiedName().startsWith("java.")) {
+            if (psiClass != null) {
+                String qualifiedName = psiClass.getQualifiedName();
+                if (qualifiedName == null || qualifiedName.startsWith("java.")) {
+                    return;
+                }
+                
+                // 防止循环引用
+                if (visitedClasses.contains(qualifiedName)) {
+                    return;
+                }
+                visitedClasses.add(qualifiedName);
+                
                 for (PsiField field : psiClass.getAllFields()) {
-                    sb.append("    * 字段: ").append(field.getName())
+                    sb.append(indent).append("* 字段: ").append(field.getName())
                             .append(", 类型: ").append(field.getType().getPresentableText());
                     if(field.getDocComment() != null){
                         sb.append(", 注释: ").append(field.getDocComment().getText());
                     }
                     sb.append("\n");
+                    
+                    // 递归解析非基本类型的字段
+                    PsiType fieldType = field.getType();
+                    if (fieldType instanceof PsiClassType && !isBasicType(fieldType)) {
+                        PsiClass fieldClass = ((PsiClassType) fieldType).resolve();
+                        if (fieldClass != null) {
+                            String fieldQualifiedName = fieldClass.getQualifiedName();
+                            if (fieldQualifiedName != null && !fieldQualifiedName.startsWith("java.") 
+                                    && !visitedClasses.contains(fieldQualifiedName)) {
+                                sb.append(indent).append("  [嵌套对象详细结构]\n");
+                                appendClassFieldsWithDepth(fieldType, sb, indent + "    ", visitedClasses);
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // 提取泛型参数信息
+            PsiType[] typeParameters = classType.getParameters();
+            if (typeParameters.length > 0) {
+                sb.append(indent).append("[泛型参数信息]\n");
+                for (int i = 0; i < typeParameters.length; i++) {
+                    PsiType paramType = typeParameters[i];
+                    sb.append(indent).append("* 泛型参数 ").append(i + 1).append(": ")
+                            .append(paramType.getPresentableText()).append("\n");
+                    
+                    // 递归解析泛型参数的字段
+                    if (paramType instanceof PsiClassType) {
+                        PsiClass paramClass = ((PsiClassType) paramType).resolve();
+                        if (paramClass != null) {
+                            String paramQualifiedName = paramClass.getQualifiedName();
+                            if (paramQualifiedName != null && !paramQualifiedName.startsWith("java.")) {
+                                sb.append(indent).append("  [泛型类详细结构]\n");
+                                appendClassFieldsWithDepth(paramType, sb, indent + "    ", visitedClasses);
+                            }
+                        }
+                    }
                 }
             }
         }
+    }
+
+    private boolean isBasicType(PsiType type) {
+        String typeName = type.getPresentableText();
+        return typeName.equals("String") || typeName.equals("int") || typeName.equals("long") 
+                || typeName.equals("double") || typeName.equals("float") || typeName.equals("boolean")
+                || typeName.equals("byte") || typeName.equals("short") || typeName.equals("char")
+                || typeName.equals("Integer") || typeName.equals("Long") || typeName.equals("Double")
+                || typeName.equals("Float") || typeName.equals("Boolean") || typeName.equals("Byte")
+                || typeName.equals("Short") || typeName.equals("Character") || typeName.equals("BigDecimal")
+                || typeName.equals("BigInteger") || typeName.equals("Date") || typeName.equals("LocalDate")
+                || typeName.equals("LocalDateTime") || typeName.equals("LocalTime");
     }
 
     /**
