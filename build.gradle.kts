@@ -23,6 +23,12 @@ dependencies {
         bundledPlugin("com.intellij.java")
         testFramework(org.jetbrains.intellij.platform.gradle.TestFrameworkType.Platform)
     }
+
+    // fastjson 依赖
+    implementation("com.alibaba:fastjson:1.2.83")
+
+    // okhttp 依赖
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
 }
 
 intellijPlatform {

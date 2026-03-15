@@ -17,6 +17,8 @@ public class PluginConfigurable implements Configurable {
     private JBTextField apiKeyField;
     private JBTextField apiUrlField;
     private JComboBox<String> modelComboBox;
+    private JBTextField yapiUsernameField;
+    private JBTextField yapiPasswordField;
     private JPanel mainPanel;
 
     public PluginConfigurable(Project project) {
@@ -43,6 +45,8 @@ public class PluginConfigurable implements Configurable {
         apiKeyField = new JBTextField();
         apiUrlField = new JBTextField();
         modelComboBox = new JComboBox<>();
+        yapiUsernameField = new JBTextField();
+        yapiPasswordField = new JBTextField();
 
         com.intellij.openapi.ui.LabeledComponent<JComboBox<String>> providerPanel = new com.intellij.openapi.ui.LabeledComponent<>();
         providerPanel.setText("模型提供商:");
@@ -60,10 +64,20 @@ public class PluginConfigurable implements Configurable {
         modelPanel.setText("Model:");
         modelPanel.setComponent(modelComboBox);
 
+        com.intellij.openapi.ui.LabeledComponent<JBTextField> yapiUsernamePanel = new com.intellij.openapi.ui.LabeledComponent<>();
+        yapiUsernamePanel.setText("YAPI 账号:");
+        yapiUsernamePanel.setComponent(yapiUsernameField);
+
+        com.intellij.openapi.ui.LabeledComponent<JBTextField> yapiPasswordPanel = new com.intellij.openapi.ui.LabeledComponent<>();
+        yapiPasswordPanel.setText("YAPI 密码:");
+        yapiPasswordPanel.setComponent(yapiPasswordField);
+
         mainPanel.add(providerPanel);
         mainPanel.add(apiKeyPanel);
         mainPanel.add(apiUrlPanel);
         mainPanel.add(modelPanel);
+        mainPanel.add(yapiUsernamePanel);
+        mainPanel.add(yapiPasswordPanel);
 
         providerComboBox.addItemListener(e -> {
             if (e.getStateChange() == ItemEvent.SELECTED) {
@@ -92,7 +106,9 @@ public class PluginConfigurable implements Configurable {
         return !selectedProvider.name().equals(config.getProvider()) ||
                !apiKeyField.getText().equals(config.getApiKey()) ||
                !apiUrlField.getText().equals(config.getApiUrl()) ||
-               (selectedModel != null && !selectedModel.equals(config.getModel()));
+               (selectedModel != null && !selectedModel.equals(config.getModel())) ||
+               !yapiUsernameField.getText().equals(config.getYapiUsername()) ||
+               !yapiPasswordField.getText().equals(config.getYapiPassword());
     }
 
     @Override
@@ -107,6 +123,8 @@ public class PluginConfigurable implements Configurable {
         if (selectedModel != null) {
             config.setModel(selectedModel);
         }
+        config.setYapiUsername(yapiUsernameField.getText());
+        config.setYapiPassword(yapiPasswordField.getText());
     }
 
     @Override
@@ -131,6 +149,8 @@ public class PluginConfigurable implements Configurable {
         apiKeyField.setText(config.getApiKey());
         apiUrlField.setText(config.getApiUrl());
         modelComboBox.setSelectedItem(config.getModel());
+        yapiUsernameField.setText(config.getYapiUsername());
+        yapiPasswordField.setText(config.getYapiPassword());
     }
 
     @Nullable

@@ -10,11 +10,13 @@ import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.Messages;
 import org.jetbrains.annotations.NotNull;
 import org.yax.yapiplug.config.PluginConfig;
+import org.yax.yapiplug.util.YapiUtil;
 
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.Map;
 import java.util.Scanner;
 public class LLMService {
 
@@ -30,8 +32,15 @@ public class LLMService {
                 try {
                     String response = callLLMAPI(context, project);
 
+                    // 调用大模型后，检查是否有 YAPI cookie，没有则登录
+                    String yapiCookie = checkAndLoginYapi(project);
+
                     ApplicationManager.getApplication().invokeLater(() -> {
-                        Messages.showInfoMessage(project, response, providerName + " 代码分析报告");
+                        if (yapiCookie != null && !yapiCookie.isEmpty()) {
+                            Messages.showInfoMessage(project, response + "\n\n[YAPI 登录成功]", providerName + " 代码分析报告");
+                        } else {
+                            Messages.showInfoMessage(project, response, providerName + " 代码分析报告");
+                        }
                     });
                 } catch (Exception e) {
                     ApplicationManager.getApplication().invokeLater(() -> {
@@ -105,6 +114,50 @@ public class LLMService {
             Scanner errorScanner = new Scanner(conn.getErrorStream(), StandardCharsets.UTF_8);
             String errorMsg = errorScanner.hasNext() ? errorScanner.useDelimiter("\\A").next() : "Unknown Error";
             throw new RuntimeException("HTTP " + code + ": " + errorMsg);
+        }
+    }
+
+    /**
+     * 检查是否有 YAPI cookie，没有则调用 loginYapi 登录
+     */
+    private static String checkAndLoginYapi(Project project) {
+        PluginConfig config = PluginConfig.getInstance(project);
+        String yapiCookie = config.getYapiCookie();
+
+        // 如果已经有 cookie，直接返回
+        if (yapiCookie != null && !yapiCookie.isEmpty()) {
+            System.out.println("使用已存储的 YAPI Cookie");
+            return yapiCookie;
+        }
+
+        String yapiUsername = config.getYapiUsername();
+        String yapiPassword = config.getYapiPassword();
+
+        // 检查是否配置了 YAPI 账号和密码
+        if (yapiUsername == null || yapiUsername.trim().isEmpty() || 
+            yapiPassword == null || yapiPassword.trim().isEmpty()) {
+            System.out.println("YAPI 账号或密码未配置");
+            return null;
+        }
+
+        try {
+            // 调用 loginYapi 获取 cookie
+            Map<String, String> loginResult = YapiUtil.loginYapi(yapiUsername, yapiPassword);
+            String newCookie = loginResult.get("Cookie");
+            
+            if (newCookie != null && !newCookie.isEmpty()) {
+                // 将 cookie 存储到配置中
+                config.setYapiCookie(newCookie);
+                System.out.println("YAPI 登录成功，获取到 Cookie: " + newCookie);
+                return newCookie;
+            } else {
+                System.out.println("YAPI 登录失败，未获取到 Cookie");
+                return null;
+            }
+        } catch (Exception e) {
+            System.out.println("YAPI 登录异常: " + e.getMessage());
+            e.printStackTrace();
+            return null;
         }
     }
 }
